@@ -35,11 +35,28 @@ c     Other physical quantities
 c     functions we call in this routine
       Real ran1
       Real*8 mag, amp
+      
+c     parallel variables
+      Integer mpi_i, mpi_j, my_rank, np_mpi, error;      
 
 c--------------------------------------------------------------------------------------------------------------------------
-      
-      write(*,*) 'PROGRAM: working out a light curve' 
-      write(*,*)  'for an inclined orbit, esin paper 2012'
+#ifdef MPI_ON
+      include "mpif.h"
+      call MPI_Init( error );
+      call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, error);
+      call MPI_Comm_size(MPI_COMM_WORLD, np_mpi, error);
+#else
+      my_rank = 0
+      np_mpi = 1
+#endif      
+
+      if (my_rank.gt.-1) then
+        write(*,*) 'PROGRAM: working out a light curve' 
+        write(*,*)  'for an inclined orbit, esin paper 2012'
+        if (np_mpi.gt.1) then 
+          write(*,*) 'This is thread ', my_rank
+        endif
+      endif    
 
 c     name your light curve file here
       open(unit=30,file='lcinc_opi4_ipi4_b0.5')
@@ -168,6 +185,12 @@ c         distance of planet. not use at the moment
           write(30,*) time, A_b, A_b-A_s, xcm, ycm        
 504       end do
 503      End Do
+
+#ifdef MPI_ON
+      call MPI_Finalize()
+#endif    
+
+
       End  
       
 c     This is the end of JM's code       
