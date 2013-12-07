@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import os, sys
 import lc_sub
 import time
+from mpi4py import MPI
 
 # define a few constants
 G = 6.67e-11
@@ -125,16 +126,50 @@ def mag_single ( u ):
 	A = ( u**2 + 2.0) / ( u * np.sqrt( u**2 + 4.0) )
 	return A
 
-n_lightcurves = 10
 
 
-for i in range( n_lightcurves):   
+nproc = MPI.COMM_WORLD.Get_size()   # Size of communicator
+
+my_rank = MPI.COMM_WORLD.Get_rank()   # Ranks in communicator
+
+my_node = MPI.Get_processor_name()    # Node where this MPI process runs
+
+
+N_LIGHTCURVES_TOTAL = int (sys.argv[1])
+
+n_lightcurves = N_LIGHTCURVES_TOTAL / nproc
+
+remainder = N_LIGHTCURVES_TOTAL - ( n_lightcurves * nproc )
+
+
+# spread remainder out among threads
+if remainder < my_rank + 1:
+	my_extra = 0
+	extra_below = remainder
+else:
+	my_extra = 1
+	extra_below = my_rank
+
+my_nmin = (my_rank * n_lightcurves) + extra_below
+my_nmax = my_nmin + n_lightcurves + my_extra
+ndo = my_nmax - my_nmin
+
+print "This is thread %i calculating lightcurves %i to %i" % (my_rank, my_nmin, my_nmax)	
+
+
+# set barrier so print output doesn't look muddled
+MPI.COMM_WORLD.Barrier()
+
+# start a timer for each thread
+time_init = time.time()
+
+for i in range( my_nmin, my_nmax):   
    
-	m2=1.3 * np.random.random()
-	m1=0.3 * np.random.random()
-	alpha=0.35 * np.random.random()
-	d_l=50.0 * np.random.random()
-	v=10000.0 * np.random.random()
+	m2 = 1.3 * np.random.random()
+	m1 = 0.3 * np.random.random()
+	alpha = 0.35 * np.random.random()
+	d_l = 50.0 * np.random.random()
+	v = 10000.0 * np.random.random()
 		
 	# These next two values determination the orientation of the system
 	# i_p being inclination and omega being ascending node longitude
@@ -145,13 +180,25 @@ for i in range( n_lightcurves):
 	# beta is the angular distance of closest approach      
 	beta=0.5
 
-	print "Lightcurve %i" % i
+	if my_rank == 0: print "Lightcurve %i" % i
 	time1 = time.time()
 	do_light_curve ( m1, m2, alpha, beta, d_l, v, i_p, omega)
 	time2 = time.time()
-	print "Time %.2f seconds" % (time2 - time1)
+	if my_rank == 0: print "Time %.2f seconds" % (time2 - time1)
+	
+
+time_tot = time2 - time_init
 
 
 
+
+# set barrier so print output doesn't look muddled
+if my_rank == 0: print 'Waiting for threads to finish...'
+MPI.COMM_WORLD.Barrier()
+
+
+print "Thread %i took %.2f seconds to calculate %i lightcurves" % (my_rank, time_tot, ndo)
+
+MPI.Finalize()
 
 
