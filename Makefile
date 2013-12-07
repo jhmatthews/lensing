@@ -18,3 +18,12 @@ para:
 
 serial:
 	$(F77) parallel_dev.f -o serial_lens
+
+
+py_lens:
+	f2py -c lc_sub.f -m lc_sub	
+
+
+
+clean:
+	rm -f *~
