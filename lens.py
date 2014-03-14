@@ -28,7 +28,17 @@ MSUN = 1.98892e30
 # and the value of beta, clock specifies anticlockwise or clockwise orbit
 
 def do_light_curve ( m1, m2, alpha, beta, d_l, v, i_p, omega, dt = 1.0, tmax=48000.0, phi_0 = 0.5):
-	'''calculate a lensing light curve'''
+	'''calculate a lensing light curve
+
+	m1		mass of object one
+	m2 		mass of object two
+	alpha	separation in Einstein radii
+	beta 	closest approach in Einstein radii
+	d_l 	distance to lens in pc 
+	v 		velocity in ms^-1
+	i_p 	incliantion 
+	omega 	longitude of ascending node 
+	'''
 
 	mtot = m1 + m2
 	a1 = alpha * m2 / mtot
